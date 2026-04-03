@@ -53,3 +53,39 @@ Returns dataset statistics.
 - Tailwind CSS v4
 - csv-parse
 - Geist font
+
+## Added Functionality (Matrix Factorization)
+
+The following was added as an extension (without replacing existing project files/logic):
+
+- Matrix factorization script: `cse575_sorting/matrix_factorization.py`
+- Node/Python bridge helper: `lib/loadRecommendations.js`
+- New API route for direct recommendations: `app/api/recommend/route.js`
+- `/api/search` user responses can include:
+  - `recommendations`: top predicted unseen items
+  - `recommendationError`: details if the recommender fails
+- UI now displays matrix-factorization recommendation results in user search view.
+
+### Additional setup for matrix-factorization feature
+
+Install Python dependencies:
+
+```bash
+pip install numpy pandas
+```
+
+Optional on Windows if `python` resolves to a different interpreter:
+
+```bash
+set PYTHON_BIN=C:\path\to\python.exe
+```
+
+### Matrix recommendation endpoint
+
+`GET /api/recommend`
+
+Query params:
+
+- `userId` (required): integer
+- `topN` (optional): positive integer, default `5`
+- `method` (optional): `svd` or `gd`, default `svd`

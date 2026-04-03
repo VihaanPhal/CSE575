@@ -1,4 +1,5 @@
 import { userMap, movieMap } from "@/lib/loadMovies";
+import { getMatrixRecommendations } from "@/lib/loadRecommendations";
 import { NextResponse } from "next/server";
 
 export async function GET(request) {
@@ -30,11 +31,31 @@ export async function GET(request) {
         { status: 404 }
       );
     }
+
+    let recommendations = [];
+    let recommendationError = null;
+
+    try {
+      const recResult = await getMatrixRecommendations({
+        userId: id,
+        topN: 5,
+        method: "svd",
+      });
+      recommendations = recResult.recommendations;
+    } catch (err) {
+      recommendationError =
+        err instanceof Error
+          ? err.message
+          : "Recommendation engine is currently unavailable.";
+    }
+
     return NextResponse.json({
       userId: id,
       totalRatings: ratings.length,
       averageRating: +(ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(2),
       ratings,
+      recommendations,
+      recommendationError,
     });
   }
 

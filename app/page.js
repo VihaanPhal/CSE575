@@ -229,6 +229,68 @@ export default function Home() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Matrix-Factorization Recommendations */}
+              {Array.isArray(result.recommendations) &&
+                result.recommendations.length > 0 && (
+                  <div className="bg-surface border border-border rounded-lg overflow-hidden mt-6">
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <p className="text-xs text-text-secondary uppercase tracking-wider font-medium">
+                        Top Recommendations (Matrix Factorization)
+                      </p>
+                      <p className="text-xs font-mono text-text-secondary">
+                        {result.recommendations.length} items
+                      </p>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
+                            Rank
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
+                            Movie ID
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
+                            Title
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
+                            Predicted Rating
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {result.recommendations.map((rec, index) => (
+                          <tr
+                            key={`${rec.item_id}-${index}`}
+                            className="border-b border-border/50 hover:bg-white/[0.02]"
+                          >
+                            <td className="px-4 py-3 font-mono text-text-secondary">
+                              {index + 1}
+                            </td>
+                            <td className="px-4 py-3 font-mono text-text-secondary">
+                              {rec.item_id}
+                            </td>
+                            <td className="px-4 py-3">
+                              {rec.title || "Unknown title"}
+                            </td>
+                            <td className="px-4 py-3 font-mono">
+                              {typeof rec.predicted_rating === "number"
+                                ? rec.predicted_rating.toFixed(3)
+                                : rec.predicted_rating}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+              {result.recommendationError && (
+                <div className="mt-4 px-4 py-3 rounded-lg border border-border text-xs text-text-secondary">
+                  Recommendation engine note: {result.recommendationError}
+                </div>
+              )}
             </div>
           )}
 
