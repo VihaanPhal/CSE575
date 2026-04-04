@@ -96,16 +96,16 @@ function ensureVirtualEnv() {
 function ensurePythonPackages() {
   const checkResult = runSync(
     venvPython,
-    ["-c", "import numpy, pandas"],
+    ["-c", "import numpy, pandas, scipy, sklearn"],
     { stdio: "pipe" }
   );
 
   if (checkResult.status === 0) {
-    console.log("[dev] Python dependencies already installed (numpy, pandas)");
+    console.log("[dev] Python dependencies already installed (numpy, pandas, scipy, scikit-learn)");
     return;
   }
 
-  console.log("[dev] Installing Python dependencies: numpy, pandas");
+  console.log("[dev] Installing Python dependencies: numpy, pandas, scipy, scikit-learn");
 
   const pipUpgrade = runSync(
     venvPython,
@@ -118,11 +118,11 @@ function ensurePythonPackages() {
 
   const pipInstall = runSync(
     venvPython,
-    ["-m", "pip", "install", "numpy", "pandas"],
+    ["-m", "pip", "install", "numpy", "pandas", "scipy", "scikit-learn"],
     { stdio: "inherit" }
   );
   if (pipInstall.status !== 0) {
-    throw new Error("Failed to install numpy/pandas in .venv.");
+    throw new Error("Failed to install Python dependencies in .venv.");
   }
 }
 
