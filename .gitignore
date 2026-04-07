@@ -40,6 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# dataset
-/data/*.csv
+# dataset (large files — not committed)
 /cse575_sorting/*.csv
+/cse575_sorting/*.npz
+
+# python
+.venv/
+__pycache__/
+*.pyc
+*.pyo

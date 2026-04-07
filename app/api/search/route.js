@@ -1,4 +1,6 @@
 import { userMap, movieMap } from "@/lib/loadMovies";
+import { getMatrixRecommendations } from "@/lib/loadRecommendations";
+import { getWizanRecommendations } from "@/lib/loadWizanRecommendations";
 import { NextResponse } from "next/server";
 
 export async function GET(request) {
@@ -25,16 +27,34 @@ export async function GET(request) {
   if (type === "user") {
     const ratings = userMap.get(id);
     if (!ratings) {
-      return NextResponse.json(
-        { error: `No user found with ID '${q}'` },
-        { status: 404 }
-      );
+      // Unknown user — trigger cold-start flow on the frontend
+      return NextResponse.json({ newUser: true, userId: id });
     }
+
+    let recommendations = [];
+    let recommendationError = null;
+
+    try {
+      const recResult = await getWizanRecommendations({ userId: id, topN: 10 });
+      recommendations = recResult.recommendations;
+    } catch (wizanErr) {
+      // Fall back to SVD if wiZAN fails
+      try {
+        const recResult = await getMatrixRecommendations({ userId: id, topN: 10, method: "svd" });
+        recommendations = recResult.recommendations;
+      } catch (err) {
+        recommendationError =
+          err instanceof Error ? err.message : "Recommendation engine is currently unavailable.";
+      }
+    }
+
     return NextResponse.json({
       userId: id,
       totalRatings: ratings.length,
       averageRating: +(ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(2),
       ratings,
+      recommendations,
+      recommendationError,
     });
   }
 
