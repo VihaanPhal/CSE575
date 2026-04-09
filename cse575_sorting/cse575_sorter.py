@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import GroupShuffleSplit
 
-# Load data from ratings.csv and movies.csv, this will change if you use a different file. Put files in same location
+# Load data
 ratings_df = pd.read_csv('ratings.csv')
 movies_df = pd.read_csv('movies.csv')
 
-# Process the genres 
+# Process genres
 movies_df['genres_list'] = movies_df['genres'].str.split('|')
 all_genres = set()
 for genres in movies_df['genres_list']:
@@ -16,9 +16,7 @@ sorted_genres = sorted(all_genres)
 for genre in sorted_genres:
     movies_df[f'genre_{genre}'] = movies_df['genres'].str.contains(genre).astype(int)
 
-# Filter sparse users and items*
-# We do this now to make the data a bit more accurate, but this will probably be changed later and replaced with something more sophisticated
-# not exactly sure what but this block is semi-temporary
+# Filter sparse users and items
 min_user_ratings = 5
 min_movie_ratings = 5
 user_counts = ratings_df['userId'].value_counts()
@@ -36,24 +34,27 @@ movie_to_index = {movie: i for i, movie in enumerate(unique_movies)}
 ratings_df['user_idx'] = ratings_df['userId'].map(user_to_index)
 ratings_df['movie_idx'] = ratings_df['movieId'].map(movie_to_index)
 
-# Create train/test split
+# Create train/test split for later testing, test_size is 20 percent are test therefore 80% are train. If you dont want test data and only train data change test_size to 0
 splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
 train_idx, test_idx = next(splitter.split(ratings_df, groups=ratings_df['userId']))
 train_df = ratings_df.iloc[train_idx]
 test_df = ratings_df.iloc[test_idx]
 
-# Merge movie information into one file
+# Merge movie information
 movie_columns = ['movieId', 'title', 'genres', 'genres_list'] + [f'genre_{g}' for g in sorted_genres]
 movies_subset = movies_df[movie_columns].copy()
 train_merged = train_df.merge(movies_subset, on='movieId', how='left')
 test_merged = test_df.merge(movies_subset, on='movieId', how='left')
 
-# Combine with split indicator
+# Combine with split indicator(most are train which are used to train the model and test is used to evaluate the model later)
 train_merged['split'] = 'train'
 test_merged['split'] = 'test'
 final_df = pd.concat([train_merged, test_merged], ignore_index=True)
 
-# Define column order so the completed file is made how we want it. If yo want to change the order of columns later, here is where to do it
+# Add datetime column
+final_df['datetime'] = pd.to_datetime(final_df['timestamp'], unit='s')
+
+# Define column order (This is not dynamic and only works for movielens, if we use another database we need to change this)
 column_order = [
     'userId', 'user_idx', 
     'movieId', 'movie_idx',
@@ -61,18 +62,76 @@ column_order = [
     'title', 'genres', 'genres_list'
 ] + [f'genre_{g}' for g in sorted_genres] + ['split']
 
-# This takes the timestamp which is hard to read for a human and makes a new column that is easily readable
-# i.e. it turns 964982703 into 2000-07-30 18:45:03 so we have both for reading the data
-# if we don't need the human readable timestamp then you can comment this out.
-final_df['datetime'] = pd.to_datetime(final_df['timestamp'], unit='s')
-
-# THIS IS A BACKUP MEASURE TO MAKE SURE AT LEAST ALL GENRES APPEAR AT LEAST ONCE
-# don't expect this section to do anything in the actual version, this just makes sure that each genre column exists even if no movies have that genre. 
-# it will forcably assign 0 to all movies for that genre, which is ensures our data is all where it should be i.e. if columne 11 is not present then 12+ are all one space to the left, this avoids that
+# Ensure all genre columns exist(if the database doesn't include a genre we need to add it with 0 in all columns or we can have errors.)
+# this shouldn't be an issue with larger databases, but I am being careful
 for col in column_order:
     if col.startswith('genre_') and col not in final_df.columns:
         final_df[col] = 0
 
-# Reorder columns and save to the file
+# Save movie information and ratings to CSV
 final_df = final_df[column_order]
 final_df.to_csv('movielens_combined.csv', index=False)
+
+# Precompute movie statistics to save time when running IDrec.py
+train_data_only = final_df[final_df['split'] == 'train']
+movie_stats_list = []
+for movie_id, group in train_data_only.groupby('movieId'):
+    first = group.iloc[0]
+    # Store genres_list as a proper list NOT as a sting to avoid issues later
+    genres_list = first['genres_list']
+    if isinstance(genres_list, str):
+        genres_list = eval(genres_list)
+    
+    movie_stats_list.append({
+        'movie_id': movie_id,
+        'title': first['title'],
+        'genres_list': genres_list,
+        'avg_rating': group['rating'].mean(),
+        'rating_count': len(group)
+    })
+
+movie_stats_df = pd.DataFrame(movie_stats_list)
+movie_stats_df.to_csv('movie_stats.csv', index=False)
+
+# Precompute user profiles to save time when running IDrec.py
+user_profiles_list = []
+for user_id in train_data_only['userId'].unique():
+    user_data = train_data_only[train_data_only['userId'] == user_id]
+    
+    rated_movie_ids = []
+    rated_movies_details = []
+    genre_prefs = {}
+    
+    for _, row in user_data.iterrows():
+        movie_id = row['movieId']
+        # Find movie info from movie_stats_list
+        movie_info = next((m for m in movie_stats_list if m['movie_id'] == movie_id), None)
+        if movie_info:
+            rated_movie_ids.append(movie_id)
+            rated_movies_details.append({
+                'movie_id': movie_id,
+                'title': movie_info['title'],
+                'rating': row['rating'],
+                'genres_list': movie_info['genres_list']  # Store as list
+            })
+            
+            for genre in movie_info['genres_list']:
+                genre_prefs[genre] = genre_prefs.get(genre, 0) + row['rating']
+    
+    # Normalize genre preferences between [0,1] for computations
+    if genre_prefs:
+        max_pref = max(genre_prefs.values())
+        normalized_prefs = {g: s/max_pref for g, s in genre_prefs.items()}
+    else:
+        normalized_prefs = {}
+    
+    user_profiles_list.append({
+        'user_id': user_id,
+        'rated_movie_ids': rated_movie_ids,
+        'rated_movies_details': rated_movies_details,
+        'genre_prefs': normalized_prefs,
+        'num_ratings': len(rated_movies_details)
+    })
+
+user_profiles_df = pd.DataFrame(user_profiles_list)
+user_profiles_df.to_csv('user_profiles.csv', index=False)
