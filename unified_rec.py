@@ -1,11 +1,3 @@
-"""
-Unified Recommender System - Runs all three models and displays results
-
-Usage:
-    python unified_rec.py
-    Then enter user ID when prompted
-"""
-
 import json
 import sys
 from pathlib import Path
@@ -19,12 +11,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
-# ============================================================================
-# VERSION 1: SIMPLE CONTENT-BASED RECOMMENDER
-# ============================================================================
+
+# fast and simple ID_rec.py
+
 
 class SimpleRecommender:
-    """Genre + popularity based recommender"""
     
     def __init__(self, data_file='movielens_combined.csv'):
         print("  Loading Simple Recommender...")
@@ -94,12 +85,11 @@ class SimpleRecommender:
         return scores[:n]
 
 
-# ============================================================================
-# VERSION 2: MATRIX FACTORIZATION RECOMMENDER
-# ============================================================================
+
+# matrix factorization using SVD
+
 
 class MatrixFactorizationRecommender:
-    """Matrix Factorization using SVD"""
     
     def __init__(self, ratings_csv='ratings.csv', items_csv='movies.csv'):
         print("  Loading Matrix Factorization Recommender...")
@@ -156,12 +146,11 @@ class MatrixFactorizationRecommender:
         } for item_id, score in candidates.items()]
 
 
-# ============================================================================
-# VERSION 3: WIZAN-DUAL OCCF RECOMMENDER (Simplified for speed)
-# ============================================================================
+
+# WiziAN-Dual One-Class Collaborative Filtering (I don't fully understand how this works lol)
+
 
 class WizanRecommender:
-    """Simplified wiZAN-Dual One-Class Collaborative Filtering"""
     
     def __init__(self, ratings_csv='ratings.csv', movies_csv='movies.csv'):
         print("  Loading wiZAN-Dual Recommender...")
@@ -277,12 +266,10 @@ class WizanRecommender:
                  'score': score, 'model': 'wiZAN-Dual'} for mid, score in ranked]
 
 
-# ============================================================================
-# ENSEMBLE RECOMMENDER (Combines all three)
-# ============================================================================
+
+# combine all three and take average
 
 class EnsembleRecommender:
-    """Runs all models and combines results"""
     
     def __init__(self):
         print("\n" + "="*80)
@@ -315,7 +302,6 @@ class EnsembleRecommender:
         print(f"\n{len(self.models)} models loaded successfully")
     
     def recommend_all(self, user_id, n=10):
-        """Get recommendations from all models"""
         results = {}
         
         for name, model in self.models.items():
@@ -331,7 +317,6 @@ class EnsembleRecommender:
         return results
     
     def recommend_ensemble_mean(self, user_id, n=10):
-        """Combine recommendations by averaging scores"""
         all_recs = self.recommend_all(user_id, n * 2)  # Get more for better averaging
         
         # Aggregate scores by movie
@@ -359,7 +344,6 @@ class EnsembleRecommender:
         return combined[:n]
     
     def print_comparison_table(self, user_id, n=10):
-        """Print side-by-side comparison of all models"""
         print("\n" + "="*80)
         print(f"RECOMMENDATIONS FOR USER {user_id}")
         print("="*80)
@@ -402,9 +386,8 @@ class EnsembleRecommender:
                 print(f"     - {model_name:12}: {score:.4f}")
 
 
-# ============================================================================
-# MAIN EXECUTION
-# ============================================================================
+
+# main excecution
 
 def main():
     print("="*80)
