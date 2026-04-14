@@ -1,334 +1,169 @@
-"use client";
+import Link from "next/link";
+import { getLandingData } from "@/lib/recommendationService";
+import { LandingSearch } from "@/components/landing-search";
+import { PosterFrame } from "@/components/poster-frame";
 
-import { useState, useEffect } from "react";
+function ShowcaseCard({ title, description, href }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-[28px] border border-white/70 bg-white/88 p-6 shadow-[0_18px_55px_rgba(148,163,184,0.14)] transition hover:-translate-y-1 hover:shadow-[0_26px_75px_rgba(29,78,216,0.14)]"
+    >
+      <p className="font-mono text-xs uppercase tracking-[0.24em] text-brand-600">Path</p>
+      <h3 className="mt-3 text-2xl font-semibold text-slate-950">{title}</h3>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p>
+    </Link>
+  );
+}
 
-export default function Home() {
-  const [searchType, setSearchType] = useState("user");
-  const [query, setQuery] = useState("");
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState(null);
+function MovieStrip({ title, items, href }) {
+  return (
+    <section className="rounded-[32px] border border-white/70 bg-white/92 p-6 shadow-[0_22px_65px_rgba(148,163,184,0.14)]">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.24em] text-brand-600">Curated strip</p>
+          <h2 className="mt-2 text-3xl font-semibold text-slate-950">{title}</h2>
+        </div>
+        <Link
+          href={href}
+          className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
+        >
+          Open view
+        </Link>
+      </div>
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {items.map((movie) => (
+          <Link
+            key={movie.movieId}
+            href={`/movies/${movie.movieId}`}
+            className="group rounded-[24px] border border-slate-200 bg-slate-50 p-4 transition hover:border-brand-200 hover:bg-white"
+          >
+            <div className="grid gap-4 sm:grid-cols-[110px_1fr]">
+              <PosterFrame
+                title={movie.title}
+                posterUrl={movie.posterUrl}
+                className="aspect-[2/3] min-h-[165px] w-full"
+              />
+              <div>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-slate-400">
+                  {movie.model}
+                </p>
+                <h3 className="mt-3 text-xl font-semibold text-slate-950 transition group-hover:text-brand-700">
+                  {movie.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{movie.genres}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {movie.reasonBadges.map((badge) => (
+                    <span
+                      key={badge}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-  useEffect(() => {
-    fetch("/api/stats")
-      .then((res) => res.json())
-      .then((data) => setStats(data))
-      .catch(() => setStats(null));
-  }, []);
-
-  async function handleSearch(e) {
-    e.preventDefault();
-    if (!query.trim()) return;
-
-    setLoading(true);
-    setResult(null);
-    setError(null);
-
-    try {
-      const res = await fetch(
-        `/api/search?type=${searchType}&q=${encodeURIComponent(query.trim())}`
-      );
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error);
-      } else {
-        setResult(data);
-      }
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
+export default async function HomePage() {
+  const data = await getLandingData();
 
   return (
-    <div className="min-h-screen flex flex-col font-sans">
-      <main className="flex-1 flex flex-col items-center px-6 pt-24 pb-16">
-        <div className="w-full max-w-3xl">
-          {/* Header */}
-          <div className="mb-12">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-bold tracking-tight text-accent">
-                Recommendation System
-              </h1>
-              {stats && (
-                <span className="text-xs font-mono px-2 py-1 rounded-full border border-border text-text-secondary">
-                  {stats.totalUsers.toLocaleString()} users &middot;{" "}
-                  {stats.totalMovies.toLocaleString()} movies &middot;{" "}
-                  {stats.totalRatings.toLocaleString()} ratings
-                </span>
-              )}
+    <div className="space-y-8">
+      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-[38px] border border-white/70 bg-[linear-gradient(140deg,rgba(255,255,255,0.98),rgba(239,246,255,0.92))] p-8 shadow-[0_34px_90px_rgba(29,78,216,0.16)]">
+          <p className="font-mono text-xs uppercase tracking-[0.28em] text-brand-600">
+            Recommendation product
+          </p>
+          <h1 className="mt-4 max-w-4xl text-5xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
+            A proper frontend for the recommender your backend already deserves.
+          </h1>
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
+            This app now exposes cold-start onboarding, model switching, explanation surfaces,
+            benchmark diagnostics, and a recommendation-oriented browse experience on top of the
+            MovieLens stack.
+          </p>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-4">
+            <div className="rounded-3xl bg-white px-4 py-5">
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Users</p>
+              <p className="mt-2 font-mono text-3xl font-semibold text-slate-950">
+                {data.stats.totalUsers.toLocaleString()}
+              </p>
             </div>
-            <p className="text-text-secondary text-sm">
-              Search the MovieLens dataset by User ID or Movie ID.
-            </p>
+            <div className="rounded-3xl bg-white px-4 py-5">
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Movies</p>
+              <p className="mt-2 font-mono text-3xl font-semibold text-slate-950">
+                {data.stats.totalMovies.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-3xl bg-white px-4 py-5">
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Ratings</p>
+              <p className="mt-2 font-mono text-3xl font-semibold text-slate-950">
+                {data.stats.totalRatings.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-3xl bg-white px-4 py-5">
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Tags</p>
+              <p className="mt-2 font-mono text-3xl font-semibold text-slate-950">
+                {data.stats.totalTags.toLocaleString()}
+              </p>
+            </div>
           </div>
-
-          {/* Segmented Toggle */}
-          <div className="flex gap-1 p-1 rounded-lg bg-surface border border-border mb-4">
-            <button
-              onClick={() => {
-                setSearchType("user");
-                setResult(null);
-                setError(null);
-              }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                searchType === "user"
-                  ? "bg-white text-black"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              Search by User ID
-            </button>
-            <button
-              onClick={() => {
-                setSearchType("movie");
-                setResult(null);
-                setError(null);
-              }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                searchType === "movie"
-                  ? "bg-white text-black"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              Search by Movie ID
-            </button>
-          </div>
-
-          {/* Search Form */}
-          <form onSubmit={handleSearch} className="flex gap-2 mb-8">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={
-                searchType === "user"
-                  ? "Enter user ID (e.g. 1)"
-                  : "Enter movie ID (e.g. 1)"
-              }
-              className="flex-1 px-4 py-3 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-accent/30 transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-3 text-sm font-medium rounded-lg border border-border text-text-primary hover:bg-accent hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Search
-            </button>
-          </form>
-
-          {/* Loading */}
-          {loading && (
-            <div className="space-y-3">
-              <div
-                className="h-4 bg-surface rounded w-1/3"
-                style={{ animation: "pulse-subtle 1.5s ease-in-out infinite" }}
-              />
-              <div
-                className="h-4 bg-surface rounded w-2/3"
-                style={{
-                  animation: "pulse-subtle 1.5s ease-in-out infinite 0.15s",
-                }}
-              />
-              <div
-                className="h-4 bg-surface rounded w-1/2"
-                style={{
-                  animation: "pulse-subtle 1.5s ease-in-out infinite 0.3s",
-                }}
-              />
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div
-              className="px-4 py-3 rounded-lg border border-error/30 bg-[#1a0000] text-error text-sm"
-              style={{ animation: "fade-in 0.2s ease-out" }}
-            >
-              {error}
-            </div>
-          )}
-
-          {/* User Search Result */}
-          {result && searchType === "user" && (
-            <div style={{ animation: "fade-in 0.3s ease-out" }}>
-              {/* Summary Card */}
-              <div className="bg-surface border border-border rounded-lg p-6 mb-4">
-                <div className="grid grid-cols-3 gap-6">
-                  <div>
-                    <p className="text-xs text-text-secondary mb-1 uppercase tracking-wider">
-                      User ID
-                    </p>
-                    <p className="text-lg font-mono font-medium">
-                      {result.userId}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-secondary mb-1 uppercase tracking-wider">
-                      Total Ratings
-                    </p>
-                    <p className="text-lg font-mono font-medium">
-                      {result.totalRatings}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-secondary mb-1 uppercase tracking-wider">
-                      Avg Rating
-                    </p>
-                    <p className="text-lg font-mono font-medium">
-                      {result.averageRating} / 5
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ratings Table */}
-              <div className="bg-surface border border-border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
-                        Movie ID
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
-                        Title
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
-                        Rating
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
-                        Genres
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
-                        Date
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.ratings.map((r, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-border/50 hover:bg-white/[0.02]"
-                      >
-                        <td className="px-4 py-3 font-mono text-text-secondary">
-                          {r.movieId}
-                        </td>
-                        <td className="px-4 py-3">{r.title}</td>
-                        <td className="px-4 py-3 font-mono">{r.rating}</td>
-                        <td className="px-4 py-3 text-text-secondary text-xs">
-                          {r.genres}
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary text-xs font-mono">
-                          {r.datetime}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Movie Search Result */}
-          {result && searchType === "movie" && (
-            <div style={{ animation: "fade-in 0.3s ease-out" }}>
-              {/* Summary Card */}
-              <div className="bg-surface border border-border rounded-lg p-6 mb-4">
-                <div className="grid grid-cols-2 gap-6 mb-4">
-                  <div>
-                    <p className="text-xs text-text-secondary mb-1 uppercase tracking-wider">
-                      Movie ID
-                    </p>
-                    <p className="text-lg font-mono font-medium">
-                      {result.movieId}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-secondary mb-1 uppercase tracking-wider">
-                      Title
-                    </p>
-                    <p className="text-lg font-medium">{result.title}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-6">
-                  <div>
-                    <p className="text-xs text-text-secondary mb-1 uppercase tracking-wider">
-                      Genres
-                    </p>
-                    <p className="text-sm">{result.genres}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-secondary mb-1 uppercase tracking-wider">
-                      Total Ratings
-                    </p>
-                    <p className="text-lg font-mono font-medium">
-                      {result.totalRatings}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-secondary mb-1 uppercase tracking-wider">
-                      Avg Rating
-                    </p>
-                    <p className="text-lg font-mono font-medium">
-                      {result.averageRating} / 5
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ratings Table */}
-              <div className="bg-surface border border-border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
-                        User ID
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
-                        Rating
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs text-text-secondary uppercase tracking-wider font-medium">
-                        Date
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.ratings.map((r, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-border/50 hover:bg-white/[0.02]"
-                      >
-                        <td className="px-4 py-3 font-mono">{r.userId}</td>
-                        <td className="px-4 py-3 font-mono">{r.rating}</td>
-                        <td className="px-4 py-3 text-text-secondary text-xs font-mono">
-                          {r.datetime}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && !result && (
-            <p className="text-center text-text-secondary/60 text-sm pt-8">
-              Enter a query above to search the dataset.
-            </p>
-          )}
         </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border px-6 py-6">
-        <p className="text-center text-xs text-text-secondary">
-          MovieLens Search &middot; CSE575 Project
-        </p>
-      </footer>
+        <LandingSearch sampleUsers={data.sampleUsers} />
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-3">
+        <ShowcaseCard
+          title="Cold-start onboarding"
+          description="Rate a compact interview set, infer a new-user vector, and show a personalized shortlist without requiring a numeric user ID."
+          href="/onboarding"
+        />
+        <ShowcaseCard
+          title="Existing-user workspace"
+          description="Switch between content, explained simple, matrix factorization, wiZAN, and ensemble paths on the same profile."
+          href={`/users/${data.sampleUsers[0]?.userId || 1}`}
+        />
+        <ShowcaseCard
+          title="Benchmarks and analytics"
+          description="Inspect dataset-wide distributions together with benchmark outputs and route-level recommender diagnostics."
+          href="/analytics"
+        />
+      </section>
+
+      <MovieStrip title="Popular with the crowd" items={data.popular} href="/discover?sort=popular" />
+      <MovieStrip title="Hidden gems worth surfacing" items={data.hiddenGems} href="/discover?sort=hidden_gem" />
+
+      <section className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_18px_55px_rgba(148,163,184,0.14)]">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.24em] text-brand-600">
+              Genre coverage
+            </p>
+            <h2 className="mt-2 text-3xl font-semibold text-slate-950">
+              The dataset spans every major recommendation lane.
+            </h2>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          {data.topGenres.map((genre) => (
+            <span
+              key={genre.genre}
+              className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700"
+            >
+              {genre.genre} · {genre.totalRatings.toLocaleString()} ratings
+            </span>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

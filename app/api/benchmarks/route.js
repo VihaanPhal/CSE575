@@ -7,14 +7,7 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     const payload = await getAnalyticsPayload();
-
-    return NextResponse.json({
-      ...payload.stats,
-      genreStats: payload.genreStats,
-      ratingDistribution: payload.ratingDistribution,
-      ratingsOverTime: payload.ratingsOverTime,
-      benchmarkSummary: payload.benchmarks,
-    });
+    return NextResponse.json(payload.benchmarks);
   } catch (error) {
     return handleApiError(error);
   }

@@ -1,57 +1,76 @@
-import { userMap, movieMap } from "@/lib/loadMovies";
 import { NextResponse } from "next/server";
+import {
+  ApiError,
+  handleApiError,
+  parseIntegerParam,
+  parseModelParam,
+} from "@/lib/api";
+import {
+  getMovieDetail,
+  getUserSummary,
+  getModelRecommendations,
+  searchTitles,
+  SUPPORTED_MODELS,
+} from "@/lib/recommendationService";
 
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const type = searchParams.get("type");
-  const q = searchParams.get("q");
+  try {
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type");
+    const query = searchParams.get("q")?.trim();
+    const model = parseModelParam(searchParams.get("model"), SUPPORTED_MODELS);
+    const limit = parseIntegerParam(searchParams.get("limit"), "limit", {
+      min: 1,
+      max: 50,
+      required: false,
+    });
 
-  if (!q) {
-    return NextResponse.json({ error: "Missing query parameter 'q'" }, { status: 400 });
-  }
+    if (!query) {
+      throw new ApiError(400, "MISSING_QUERY", "Missing query parameter 'q'.");
+    }
 
-  if (type !== "user" && type !== "movie") {
-    return NextResponse.json(
-      { error: "Parameter 'type' must be 'user' or 'movie'" },
-      { status: 400 }
-    );
-  }
-
-  const id = parseInt(q, 10);
-  if (isNaN(id)) {
-    return NextResponse.json({ error: "Query must be a valid number" }, { status: 400 });
-  }
-
-  if (type === "user") {
-    const ratings = userMap.get(id);
-    if (!ratings) {
+    if (!["title", "user", "movie"].includes(type)) {
       return NextResponse.json(
-        { error: `No user found with ID '${q}'` },
-        { status: 404 }
+        {
+          code: "INVALID_TYPE",
+          message: "Parameter 'type' must be 'title', 'user', or 'movie'.",
+        },
+        { status: 400 }
       );
     }
-    return NextResponse.json({
-      userId: id,
-      totalRatings: ratings.length,
-      averageRating: +(ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(2),
-      ratings,
-    });
-  }
 
-  // type === "movie"
-  const movie = movieMap.get(id);
-  if (!movie) {
-    return NextResponse.json(
-      { error: `No movie found with ID '${q}'` },
-      { status: 404 }
-    );
+    if (type === "title") {
+      const results = await searchTitles(query, limit ?? 20);
+      return NextResponse.json({
+        query,
+        totalResults: results.length,
+        results,
+      });
+    }
+
+    const id = parseIntegerParam(query, "q", { min: 1 });
+
+    if (type === "user") {
+      const summary = getUserSummary(id);
+      const recommendations = await getModelRecommendations(id, {
+        model,
+        limit: limit ?? 15,
+      });
+
+      return NextResponse.json({
+        userId: summary.user.userId,
+        totalRatings: summary.user.totalRatings,
+        averageRating: summary.user.averageRating,
+        ratings: summary.history,
+        genreProfile: summary.profile.genreProfile,
+        ratingDistribution: summary.profile.ratingDistribution,
+        recommendations,
+      });
+    }
+
+    const movie = await getMovieDetail(id);
+    return NextResponse.json(movie);
+  } catch (error) {
+    return handleApiError(error);
   }
-  return NextResponse.json({
-    movieId: id,
-    title: movie.title,
-    genres: movie.genres,
-    totalRatings: movie.ratings.length,
-    averageRating: +(movie.ratings.reduce((sum, r) => sum + r.rating, 0) / movie.ratings.length).toFixed(2),
-    ratings: movie.ratings,
-  });
 }

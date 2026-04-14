@@ -1,55 +1,91 @@
-# NF Search
+# Recommendation Studio
 
-Netflix movie search app built with Next.js, Tailwind CSS, and Vercel's design language. Search the Netflix movie dataset by index or title.
+MovieLens recommendation product built with Next.js, Tailwind CSS v4, Recharts, and a thin Python bridge over the existing recommender scripts in `cse575_sorting/`.
+
+## What It Does
+
+- New-user cold-start onboarding with interview movies and wiZAN-based recommendations
+- Existing-user workspace with model switching across content, explained simple, matrix factorization, wiZAN, and ensemble views
+- Movie detail pages with tags, trends, rating distributions, and similar-title navigation
+- Discovery hub for popular, hidden-gem, polarizing, and similar-to-item browsing
+- Analytics dashboard with dataset charts and benchmark diagnostics
+
+## Routes
+
+### App routes
+
+- `/` landing page
+- `/onboarding` cold-start interview flow
+- `/users/[userId]` existing-user recommendation workspace
+- `/movies/[movieId]` movie detail page
+- `/discover` browse and discovery hub
+- `/analytics` dataset analytics and benchmark diagnostics
+
+### API routes
+
+- `GET /api/search?type=title|user|movie&q=...`
+- `GET /api/recommend?userId=...&model=...&limit=...`
+- `GET /api/discover?sort=...&genre=...&min=...&limit=...`
+- `GET /api/stats`
+- `GET /api/benchmarks`
+- `GET /api/movies/[movieId]`
+- `GET /api/users/[userId]/summary`
+- `GET /api/users/[userId]/recommendations?model=...&limit=...`
+- `GET /api/users/[userId]/comparison?limit=...`
+- `GET /api/recommendations/interview?count=...`
+- `POST /api/recommendations/coldstart`
+
+## Data And Backend
+
+The web app reads MovieLens data from:
+
+- `cse575_sorting/movielens_combined.csv`
+- `cse575_sorting/ratings.csv`
+- `cse575_sorting/movies.csv`
+- `cse575_sorting/tags.csv`
+- `cse575_sorting/links.csv`
+
+The Python bridge calls:
+
+- `IDrec.py`
+- `matrix_factorization.py`
+- `wizan_api.py`
+- `test_recommenders.py`
 
 ## Setup
+
+Install JavaScript dependencies:
 
 ```bash
 npm install
 ```
 
-Place your `movie_titles.csv` file in the `data/` directory. The CSV format is:
+Install Python dependencies used by the recommender bridge:
 
+```bash
+python3 -m pip install pandas numpy scipy scikit-learn
 ```
-MovieID,YearOfRelease,Title
-```
-
-No column headers — each row is `index,year,title`. Year may be `NULL`.
 
 ## Development
+
+Run the app:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open `http://localhost:3000`.
 
-## API Reference
+## Verification
 
-### GET /api/search
+Lint:
 
-Search for a movie by index or name.
+```bash
+npm run lint
+```
 
-| Param  | Type   | Description                        |
-|--------|--------|------------------------------------|
-| `type` | string | `index` or `name`                  |
-| `q`    | string | The search query                   |
+Production build:
 
-**Responses:**
-
-- `200` — `{ index, name, year }`
-- `400` — Missing `q` or invalid `type`
-- `404` — No match found
-
-### GET /api/stats
-
-Returns dataset statistics.
-
-**Response:** `{ totalRecords: number }`
-
-## Tech Stack
-
-- Next.js (App Router)
-- Tailwind CSS v4
-- csv-parse
-- Geist font
+```bash
+npm run build
+```
